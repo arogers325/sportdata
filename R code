@@ -1,0 +1,279 @@
+library(dplyr)
+library(readr)
+library("xlsx") 
+library(readxl)
+library(data.table) 
+library(ggplot2)
+library(plotly)
+library(tableplot)
+#So scientific notation is prohibited throughtout the code
+options(scipen=999)
+
+#Read in both data sets
+nba_all_star_games <- read_csv("nba_all_star_games.csv")
+Seasons_Stats <- read_excel("Seasons_Stats.xlsx", 
+                            col_types = c("numeric", "numeric", "text", 
+                                          "text", "numeric", "text", "numeric", 
+                                          "numeric", "numeric", "numeric", 
+                                          "numeric", "numeric", "numeric", 
+                                          "numeric", "numeric", "numeric", 
+                                          "numeric", "numeric", "numeric", 
+                                          "numeric", "numeric", "numeric", 
+                                          "numeric", "numeric", "numeric", 
+                                          "numeric", "numeric", "numeric", 
+                                          "numeric", "numeric", "numeric", 
+                                          "numeric", "numeric", "numeric", 
+                                          "numeric", "numeric", "numeric", 
+                                          "numeric", "numeric", "numeric", 
+                                          "numeric", "numeric", "numeric", 
+                                          "numeric", "numeric", "numeric", 
+                                          "numeric", "numeric", "numeric", 
+                                          "numeric", "numeric", "numeric", 
+                                          "numeric"))
+#Trimmed down datasets to get rid of unnecessary rows of data
+Seasons_Stats$Player <- gsub('\\s+', '', Seasons_Stats$Player)
+nba_all_star_games$player <- gsub('\\s+', '', nba_all_star_games$player)
+U = filter(Seasons_Stats, 2009 < Year)
+Updated_SeasonStats = filter(U, Year<2017)
+
+#Trimmed down datasets to get rid of unnecessary columns
+AllStars_trimmed = subset(nba_all_star_games, select = -c(nba_draft_status,nationality, ht,wt))
+SeasonStats_trimmed = subset(Updated_SeasonStats, select = -c(ID, Age, FTr, ORBPercent, DRBPercent, TRBPercent, ASTPercent, STLPercent, BLKPercent, TOVPercent, USGPercent, blanl, blank2, OBPM, DBPM, BPM, VORP, x3PPercent, x3PAr, x3PA, x3P, x2PPercent, x2PA, x2P, WS48, WS, OWS, ORB, eFGPercent, DWS, DRB, FG, FGA, FGPercent, FT, FTA, FTPercent, GS, MP, PF))
+
+#merging colums to make Player ID
+AllStars_trimmed$PlayerID <- paste(AllStars_trimmed$player,AllStars_trimmed$AllStarYear,sep="")
+SeasonStats_trimmed$PlayerID <- paste(SeasonStats_trimmed$Player,SeasonStats_trimmed$Year,sep="")
+
+#Merge data sets
+NBA_Stats_Merged = full_join(SeasonStats_trimmed, AllStars_trimmed, by='PlayerID')
+
+#Cleaning up merged set
+NBA_Stats_Merged = subset(NBA_Stats_Merged, select = -c(AllStarYear, player, pos,team, Player))
+
+#Reorder columns 
+NBA_Stats_Merged = NBA_Stats_Merged[c(13,2,3,4,12,6,8,9,10,5,7,11,1,14)]
+
+#Removing rows for players who played on more than one team and keeping only their total numbers row
+NBA_Stats_Merged <- NBA_Stats_Merged[!duplicated(NBA_Stats_Merged$PlayerID),]
+
+#Seperate tables by Year
+NBAStats2010 = subset(NBA_Stats_Merged, Year==2010)
+NBAStats2011 = subset(NBA_Stats_Merged, Year==2011)
+NBAStats2012 = subset(NBA_Stats_Merged, Year==2012)
+NBAStats2013 = subset(NBA_Stats_Merged, Year==2013)
+NBAStats2014 = subset(NBA_Stats_Merged, Year==2014)
+NBAStats2015 = subset(NBA_Stats_Merged, Year==2015)
+NBAStats2016 = subset(NBA_Stats_Merged, Year==2016)
+
+#Seperate All Star Exclusive data
+NBA_AllStar_Stats2010 = NBAStats2010[!is.na(NBAStats2010$selection_type),]
+NBA_AllStar_Stats2011 = NBAStats2011[!is.na(NBAStats2011$selection_type),]
+NBA_AllStar_Stats2012 = NBAStats2012[!is.na(NBAStats2012$selection_type),]
+NBA_AllStar_Stats2013 = NBAStats2013[!is.na(NBAStats2013$selection_type),]
+NBA_AllStar_Stats2014 = NBAStats2014[!is.na(NBAStats2014$selection_type),]
+NBA_AllStar_Stats2015 = NBAStats2015[!is.na(NBAStats2015$selection_type),]
+NBA_AllStar_Stats2016 = NBAStats2016[!is.na(NBAStats2016$selection_type),]
+                              
+
+#Find mean stats by year
+AveStat2010 = (colMeans(Filter(is.numeric, NBAStats2010), na.rm=TRUE))
+AveStat2010 = as.matrix(AveStat2010)
+
+
+AveStat2011 = (colMeans(Filter(is.numeric, NBAStats2011), na.rm=TRUE))
+AveStat2011 = as.matrix(AveStat2011)
+
+
+AveStat2012 = (colMeans(Filter(is.numeric, NBAStats2012), na.rm=TRUE))
+AveStat2012 = as.matrix(AveStat2012)
+
+
+AveStat2013 = (colMeans(Filter(is.numeric, NBAStats2013), na.rm=TRUE))
+AveStat2013 = as.matrix(AveStat2013)
+
+
+AveStat2014 = (colMeans(Filter(is.numeric, NBAStats2014), na.rm=TRUE))
+AveStat2014 = as.matrix(AveStat2014)
+
+
+AveStat2015 = (colMeans(Filter(is.numeric, NBAStats2015), na.rm=TRUE))
+AveStat2015 = as.matrix(AveStat2015)
+
+
+AveStat2016 = (colMeans(Filter(is.numeric, NBAStats2016), na.rm=TRUE))
+AveStat2016 = as.matrix(AveStat2016)
+
+#Find mean all star stats by year
+
+AveAllStarStat2010 = (colMeans(Filter(is.numeric, NBA_AllStar_Stats2010), na.rm=TRUE))
+AveAllStarStat2010 = as.matrix(AveAllStarStat2010)
+
+AveAllStarStat2011 = (colMeans(Filter(is.numeric, NBA_AllStar_Stats2011), na.rm=TRUE))
+AveAllStarStat2011 = as.matrix(AveAllStarStat2011)
+
+AveAllStarStat2012 = (colMeans(Filter(is.numeric, NBA_AllStar_Stats2012), na.rm=TRUE))
+AveAllStarStat2012 = as.matrix(AveAllStarStat2012)
+
+AveAllStarStat2013 = (colMeans(Filter(is.numeric, NBA_AllStar_Stats2013), na.rm=TRUE))
+AveAllStarStat2013 = as.matrix(AveAllStarStat2013)
+
+AveAllStarStat2014 = (colMeans(Filter(is.numeric, NBA_AllStar_Stats2014), na.rm=TRUE))
+AveAllStarStat2014 = as.matrix(AveAllStarStat2014)
+
+AveAllStarStat2015 = (colMeans(Filter(is.numeric, NBA_AllStar_Stats2015), na.rm=TRUE))
+AveAllStarStat2015 = as.matrix(AveAllStarStat2015)
+
+AveAllStarStat2016 = (colMeans(Filter(is.numeric, NBA_AllStar_Stats2016), na.rm=TRUE))
+AveAllStarStat2016 = as.matrix(AveAllStarStat2016)
+
+#Comparing all star averages to nba averages
+
+FullAveStats2010= merge(AveAllStarStat2010, AveStat2010, by = "row.names", all = TRUE)
+colnames(FullAveStats2010) <- c("Stat","AllStars","LeagueAve")
+FullAveStats2010[ c(1,2,5,6,7,8),2 ] <- FullAveStats2010[ c(1,2,5,6,7,8),2 ] / FullAveStats2010[3,2]
+FullAveStats2010[ c(1,2,5,6,7,8),3 ] <- FullAveStats2010[ c(1,2,5,6,7,8),3 ] / FullAveStats2010[3,3]
+FullAveStats2010$DifferenceInStats <- FullAveStats2010$AllStars - FullAveStats2010$LeagueAve
+
+FullAveStats2011= merge(AveAllStarStat2011, AveStat2011, by = "row.names", all = TRUE)
+colnames(FullAveStats2011) <- c("Stat","AllStars","LeagueAve")
+FullAveStats2011[ c(1,2,5,6,7,8),2 ] <- FullAveStats2011[ c(1,2,5,6,7,8),2 ] / FullAveStats2011[3,2]
+FullAveStats2011[ c(1,2,5,6,7,8),3 ] <- FullAveStats2011[ c(1,2,5,6,7,8),3 ] / FullAveStats2011[3,3]
+FullAveStats2011$DifferenceInStats <- FullAveStats2011$AllStars - FullAveStats2011$LeagueAve
+
+FullAveStats2012= merge(AveAllStarStat2012, AveStat2012, by = "row.names", all = TRUE)
+colnames(FullAveStats2012) <- c("Stat","AllStars","LeagueAve")
+FullAveStats2012[ c(1,2,5,6,7,8),2 ] <- FullAveStats2012[ c(1,2,5,6,7,8),2 ] / FullAveStats2012[3,2]
+FullAveStats2012[ c(1,2,5,6,7,8),3 ] <- FullAveStats2012[ c(1,2,5,6,7,8),3 ] / FullAveStats2012[3,3]
+FullAveStats2012$DifferenceInStats <- FullAveStats2012$AllStars - FullAveStats2012$LeagueAve
+
+FullAveStats2013= merge(AveAllStarStat2013, AveStat2013, by = "row.names", all = TRUE)
+colnames(FullAveStats2013) <- c("Stat","AllStars","LeagueAve")
+FullAveStats2013[ c(1,2,5,6,7,8),2 ] <- FullAveStats2013[ c(1,2,5,6,7,8),2 ] / FullAveStats2013[3,2]
+FullAveStats2013[ c(1,2,5,6,7,8),3 ] <- FullAveStats2013[ c(1,2,5,6,7,8),3 ] / FullAveStats2013[3,3]
+FullAveStats2013$DifferenceInStats <- FullAveStats2013$AllStars - FullAveStats2013$LeagueAve
+
+FullAveStats2014= merge(AveAllStarStat2014, AveStat2014, by = "row.names", all = TRUE)
+colnames(FullAveStats2014) <- c("Stat","AllStars","LeagueAve")
+FullAveStats2014[ c(1,2,5,6,7,8),2 ] <- FullAveStats2014[ c(1,2,5,6,7,8),2 ] / FullAveStats2014[3,2]
+FullAveStats2014[ c(1,2,5,6,7,8),3 ] <- FullAveStats2014[ c(1,2,5,6,7,8),3 ] / FullAveStats2014[3,3]
+FullAveStats2014$DifferenceInStats <- FullAveStats2014$AllStars - FullAveStats2014$LeagueAve
+
+FullAveStats2015= merge(AveAllStarStat2015, AveStat2015, by = "row.names", all = TRUE)
+colnames(FullAveStats2015) <- c("Stat","AllStars","LeagueAve")
+FullAveStats2015[ c(1,2,5,6,7,8),2 ] <- FullAveStats2015[ c(1,2,5,6,7,8),2 ] / FullAveStats2015[3,2]
+FullAveStats2015[ c(1,2,5,6,7,8),3 ] <- FullAveStats2015[ c(1,2,5,6,7,8),3 ] / FullAveStats2015[3,3]
+FullAveStats2015$DifferenceInStats <- FullAveStats2015$AllStars - FullAveStats2015$LeagueAve
+
+FullAveStats2016= merge(AveAllStarStat2016, AveStat2016, by = "row.names", all = TRUE)
+colnames(FullAveStats2016) <- c("Stat","AllStars","LeagueAve")
+FullAveStats2016[ c(1,2,5,6,7,8),2 ] <- FullAveStats2016[ c(1,2,5,6,7,8),2 ] / FullAveStats2016[3,2]
+FullAveStats2016[ c(1,2,5,6,7,8),3 ] <- FullAveStats2016[ c(1,2,5,6,7,8),3 ] / FullAveStats2016[3,3]
+FullAveStats2016$DifferenceInStats <- FullAveStats2016$AllStars - FullAveStats2016$LeagueAve
+
+#Plot graphs and find players who have been snubbed
+ 
+FullAveStats2010 %>% filter(Stat !="Year") %>%
+  ggplot(aes(x=((factor(Stat))))) +   
+  geom_point(aes(y=AllStars), colour="black") + 
+  geom_point(aes(y=LeagueAve), colour="red")
+
+#Subsetting so only numeric and important stats are showing
+graphAllStars = subset(NBA_AllStar_Stats2016, select = -c(Pos, Tm, Year, selection_type))
+graphAllStars[ ,c(3,5,6,7,9,10) ] <- graphAllStars[ ,c(3,5,6,7,9,10) ] / graphAllStars$G
+
+#Graphs for 2010 all Stars. Redline is the average All star stat and blue is the average for the entire NBA.
+graphAllStars %>% 
+  ggplot(aes(x=((factor(PlayerID))))) +   
+  geom_point(aes(y=PTS), colour="black")+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))+
+  geom_hline(yintercept=mean(graphAllStars$PTS), color = "red")
+
+graphAllStars %>% 
+  ggplot(aes(x=((factor(PlayerID))))) +   
+  geom_point(aes(y=TSPercent), colour="black")+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))+
+  geom_hline(yintercept=mean(graphAllStars$TSPercent), color = "red")
+ 
+graphAllStars %>% 
+  ggplot(aes(x=((factor(PlayerID))))) +   
+  geom_point(aes(y=AST), colour="black")+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))+
+  geom_hline(yintercept=mean(graphAllStars$AST), color = "red")
+
+graphAllStars %>% 
+  ggplot(aes(x=((factor(PlayerID))))) +   
+  geom_point(aes(y=STL), colour="black")+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))+
+  geom_hline(yintercept=mean(graphAllStars$STL), color = "red")
+
+graphAllStars %>% 
+  ggplot(aes(x=((factor(PlayerID))))) +   
+  geom_point(aes(y=BLK), colour="black")+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))+
+  geom_hline(yintercept=mean(graphAllStars$BLK), color = "red")
+
+graphAllStars %>% 
+  ggplot(aes(x=((factor(PlayerID))))) +   
+  geom_point(aes(y=PER), colour="black")+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))+
+  geom_hline(yintercept=mean(graphAllStars$PER), color = "red")
+
+graphAllStars %>% 
+  ggplot(aes(x=((factor(PlayerID))))) +   
+  geom_point(aes(y=TRB), colour="black")+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))+
+  geom_hline(yintercept=mean(graphAllStars$TRB), color = "red")
+
+
+
+#Make graph interactive so finding points is easy
+t =NBAStats2016 %>% 
+    ggplot(aes(x=((factor(PlayerID))))) +   
+    geom_point(aes(y=PTS), colour="black")+
+    theme(axis.text.x = element_text(angle = 90, hjust = 1))+
+    geom_hline(yintercept=mean(NBA_AllStar_Stats2016$PTS), color = "red")+
+    geom_hline(yintercept=mean(!is.na(NBAStats2016$PTS)), color = "blue")
+ggplotly(t)
+t =NBAStats2016 %>% 
+  ggplot(aes(x=((factor(PlayerID))))) +   
+  geom_point(aes(y=TSPercent), colour="black")+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))+
+  geom_hline(yintercept=mean(NBA_AllStar_Stats2016$TSPercent), color = "red")+
+  geom_hline(yintercept=mean(!is.na(NBAStats2016$TSPercent)), color = "blue")
+ggplotly(t)
+t =NBAStats2015 %>% 
+  ggplot(aes(x=((factor(PlayerID))))) +   
+  geom_point(aes(y=AST), colour="black")+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))+
+  geom_hline(yintercept=mean(NBA_AllStar_Stats2016$AST), color = "red")+
+  geom_hline(yintercept=mean(!is.na(NBAStats2016$AST)), color = "blue")
+ggplotly(t)
+t =NBAStats2016 %>% 
+  ggplot(aes(x=((factor(PlayerID))))) +   
+  geom_point(aes(y=STL), colour="black")+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))+
+  geom_hline(yintercept=mean(NBA_AllStar_Stats2016$STL), color = "red")+
+  geom_hline(yintercept=mean(!is.na(NBAStats2016$STL)), color = "blue")
+ggplotly(t)
+t =NBAStats2016 %>% 
+  ggplot(aes(x=((factor(PlayerID))))) +   
+  geom_point(aes(y=BLK), colour="black")+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))+
+  geom_hline(yintercept=mean(NBA_AllStar_Stats2016$BLK), color = "red")+
+  geom_hline(yintercept=mean(!is.na(NBAStats2016$BLK)), color = "blue")
+ggplotly(t)
+t =NBAStats2016 %>% 
+  ggplot(aes(x=((factor(PlayerID))))) +   
+  geom_point(aes(y=PER), colour="black")+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))+
+  geom_hline(yintercept=mean(NBA_AllStar_Stats2016$PER), color = "red")+
+  geom_hline(yintercept=mean(!is.na(NBAStats2016$PER)), color = "blue")
+ggplotly(t)
+t =NBAStats2016 %>% 
+  ggplot(aes(x=((factor(PlayerID))))) +   
+  geom_point(aes(y=TRB), colour="black")+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))+
+  geom_hline(yintercept=mean(NBA_AllStar_Stats2016$TRB), color = "red")+
+  geom_hline(yintercept=mean(!is.na(NBAStats2016$TRB)), color = "blue")
+ggplotly(t)
+ 
