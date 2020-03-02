@@ -1,36 +1,136 @@
-const item = {
-  "itemId": '02ccbfc7-e12d-4153-abd8-b5745buja6b5',
-  name: 'Bulldog Tie',
-  description: 'Impress all of your friends and associates with this Drake Bulldog Tie!',
-  price: 19.99,
-  sizesAvailable: ' L, M, S'
-};
+const Hapi = require('@hapi/hapi');
+const uuid = require('uuid');
+const init = async () => {
+    const server = Hapi.server({
+      };                    port: 3000,
+                  host: 'localhost'
+             });
+             const BillId = uuid.v4();
+             const customerBill = {
+                   customerId: BillId,
+                   name: 'Bill',
+                   age: 70,
+                   email: Bill123@email.com
+                };
+             const customerJeff = {
+                customerId: uuid.v4(),
+                name: 'Jeff',
+                age: 25
+                email: Jeff123@email.com
+               };
+             const customerDavid = {
+                    customerId: uuid.v4(),
+                    name: 'David',
+                    age: 65,
+                    email: David123@email.com
+                };
 
-const firstName = 'Bill';
-const lastName = 'Nye';
+              let customers = [customerBill, customerJeff, customerDavid];
 
-const customer = {
-customerId: 'qohifeu8-1dds9-41c8-3f0i-53dsknj1eq3',
-firstName,
-lastName,
-email: `${firstName.toLowerCase()}.${lastName.toLowerCase()}@drake.edu`,
-phoneNumber: '+15155544455'
-};
+              server.route({
+                      method: 'GET',
+                      path: '/customers',
+                      handler: (request, h) => {
+                          return customers;
+                      }
+                  });
 
-const cart = {
-cartId: 'biwsdv8-1sv8-46v9-7m0q-53fbd56voe2',
-customerId: 'qohifeu8-1dds9-41c8-3f0i-53dsknj1eq3',
-createdDate: '2020-02-07',
-purchasedDate: '2020-02-10'
-};
+        server.route({
+          method: 'GET',
+          path: '/customers/{customerId}',
+          handler: (request, h) => {
+              const {customerId} = request.params;
+              const customer = customers.find((cust) => cust.customerId === customerId);
 
-const cartItem = {
-itemId: '02ccbfc7-e12d-4153-abd8-b5745buja6b5',
-cartId: 'biwsdv8-1sv8-46v9-7m0q-53fbd56voe2',
-quantity: 9
-};
+                if (!customer) {
+                  return h.response().code(404);
+              }
 
-console.log('item', item);
-console.log('customer', customer);
-console.log('cart', cart);
-console.log('cartItem', cartItem);
+                return customer;
+          }
+      });
+
+        server.route({
+          method: 'POST',
+          path: '/customers',
+          handler: (request, h) => {
+              const customer = request.payload;
+              const existingCust = customers.find((cust) => cust.customerId === customer.customerId);
+
+                if (existingCust) {
+                  return h.response(existingCust).code(303);
+              } else {
+                  customers.push(customer);
+
+                    return h.response(customer).code(201);
+              }
+
+            }
+      });
+
+         server.route({
+               method: 'DELETE',
+               path: '/customers/{customerId}',
+               handler: (request, h) => {
+                   const {customerId} = request.params;
+                   const customer = customers.find((cust) => cust.customerId === customerId);
+                 if (!customer) {
+                     return h.response().code(404);
+                     }
+
+                      let newcustomers = [];
+
+                       customers.forEach((cust) => {
+                                      if (cust.customerId !== customerId) {
+                                          newcustomers.push(cust);
+                                      }
+                                  });
+
+                                    customers = newcustomers;
+
+                                    return '';
+                              }
+                          });
+
+                            server.route({
+                              method: 'PUT',
+                              path: '/customers/{customerId}',
+                              handler: (request, h) => {
+                                  const {customerId} = request.params;
+                                  const updatedcustomer = request.payload;
+
+                                    if (customerId === BillId && updatedcustomer.age !== 70) {
+                                      return h.response().code(422);
+                                  }
+
+                                    if (customerId !== updatedcustomer.customerId) {
+                                      return h.response().code(409);
+                                  }
+
+                                    let newcustomers = [];
+
+                                    customers.forEach((cust) => {
+                                      if (cust.customerId === customerId) {
+                                          newcustomers.push(updatedcustomer);
+                                      } else {
+                                          newcustomers.push(cust);
+                                      }
+                                  });
+
+                                    customers = newcustomers;
+
+                                    return '';
+                              }
+                          });
+
+                            await server.start();
+                          console.log('Server running on %s', server.info.uri);
+                      };
+
+                       process.on('unhandledRejection', (err) => {
+
+                              console.log(err);
+                                 process.exit(1);
+                             });
+
+                               init();
