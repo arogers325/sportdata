@@ -1,110 +1,131 @@
 const frisby = require('frisby');
 const uuid = require('uuid');
+const Chance = require('chance');
 
-describe('/carts', () => {
-    let cart,
-        cartId,
-        customerId;
+const chance = new Chance();
+
+describe('Customers Cart', () => {
+    let firstItem,
+        secondItem,
+        firstCartItem,
+        secondCartItem,
+        cart,
+        customer;
 
     beforeAll(async () => {
-        customerId = uuid.v4();
-        cartId = uuid.v4();
-
-        cart = {
-            cartId,
-            customerId
+        customer = {
+            customerId: uuid.v4(),
+            email: chance.email(),
+            firstName: chance.first(),
+            lastName: chance.last()
         };
 
+        cart = {
+            cartId: uuid.v4(),
+            customerId: customer.customerId
+        };
+
+        firstItem = {
+            description: 'Drake Bulldogs Sweatpants',
+            itemId: uuid.v4(),
+            price: 25
+        };
+
+        secondItem = {
+            description: 'Drake Bulldogs Sweatshirt',
+            itemId: uuid.v4(),
+            price: 25
+        };
+
+        firstCartItem = {
+            cartId: cart.cartId,
+            cartItemId: uuid.v4(),
+            itemId: firstItem.itemId,
+            quantity: chance.d6()
+        };
+
+        secondCartItem = {
+            cartId: cart.cartId,
+            cartItemId: uuid.v4(),
+            itemId: secondItem.itemId,
+            quantity: chance.d6()
+        };
+
+        await frisby.post('http://localhost:3000/customers', customer);
         await frisby.post('http://localhost:3000/carts', cart);
+        await frisby.post('http://localhost:3000/items', firstItem);
+        await frisby.post('http://localhost:3000/items', secondItem);
+        await frisby.post('http://localhost:3000/cart-items', firstCartItem);
+        await frisby.post('http://localhost:3000/cart-items', secondCartItem);
     });
 
     afterAll(async () => {
-        await frisby.del(`http://localhost:3000/carts/${cartId}`);
+        await frisby.del(`http://localhost:3000/cart-items/${firstCartItem.cartItemId}`);
+        await frisby.del(`http://localhost:3000/cart-items/${secondCartItem.cartItemId}`);
+        await frisby.del(`http://localhost:3000/items/${firstItem.itemId}`);
+        await frisby.del(`http://localhost:3000/items/${secondItem.itemId}`);
+        await frisby.del(`http://localhost:3000/carts/${cart.cartId}`);
+        await frisby.del(`http://localhost:3000/customers/${customer.customerId}`);
     });
 
-    describe('GET /carts', () => {
-        test('get all carts', async () => {
-            await frisby
-                .get('http://localhost:3000/carts')
-                .expect('status', 200);
-        });
+    test('get all the customers cart information to display', async () => { // eslint-disable-line require-await
+        const expectedCartInformation = {
+            customer: {
+                email: customer.email,
+                firstName: customer.firstName,
+                lastName: customer.lastName
+            },
+            itemsInTheCart: [
+                {
+                    description: firstItem.description,
+                    price: firstItem.price,
+                    quantity: firstCartItem.quantity
+                },
+                {
+                    description: secondItem.description,
+                    price: secondItem.price,
+                    quantity: secondCartItem.quantity
+                }
+            ]
+        };
+
+        const customerResponse = await frisby.get('http://localhost:3000/customers/${customer.customerId}');
+        const actualCustomer = customerResponse.json;
+        const customersCartResponse = await frisby.get('http://locaclhost:3000/customers/${customer.customerId}/carts}');
+        const actualFirstCartItem = customersCartResponse.json[0];
+        const cartItemsResponse = await frisby.get('http://localhost:3000/carts/${actualCart.cartId}/cart-items}');
+
+        const actualFirstCartItem = customersCartResponse.json[0];
+        const actualFirstCartItem = cartItemsResponse.json[1];
+        const actualSecondCartItem = cartItemResponse.json[2];
+
+        const firstItemResponse = await frisby.get(`http://localhost:3000/items/${actualFirstCartItem.itemId}`);
+        const secondItemResponse = await frisby.get(`http://localhost:3000/items/${actualSecondCartItem.itemId}`);
+        const actualFirstCartItem = firstItemsResponse.json;
+        const actualSecondCartItem = secondItemResponse.json;
+
+        const actualCartInformation = {
+            customer: {
+                email: actualCustomer.email,
+                firstName: actualCustomer.firstName,
+                lastName: actualCustomer.lastName
+            },
+            itemsInTheCart: [
+                {
+                    description: actualFirstItem.description,
+                    price: actualFirstItem.price,
+                    quantity: actualFirstCartItem.quantity
+                },
+                {
+                    description: actualSecondItem.description,
+                    price: actualSecondItem.price,
+                    quantity: actualSecondCartItem.quantity
+                }
+            ]
+        };
+
+        console.log('actualCartInformation', actualCartInformation);
+
+        expect(actualCartInformation).toEqual(expectedCartInformation);
     });
-
-    describe('GET /carts/{cartId}', () => {
-        test('get a cart by cartId that exists', async () => {
-            await frisby
-                .get(`http://localhost:3000/carts/${cartId}`)
-                .expect('status', 200);
-        });
-
-        test('get a NOT FOUND for a cart by cartId that does not exists', async () => {
-            const randomCartId = uuid.v4();
-
-            await frisby
-                .get(`http://localhost:3000/cartId/${randomCartId}`)
-                .expect('status', 404);
-        });
-    });
-
-    describe('PUT /carts/{cartId}', () => {
-        test('should be able to update a cart by cartId', async () => {
-            const updatedCustomerId = uuid.v4();
-
-            const updateCart = {
-                ...cart,
-                customerId: updatedCustomerId
-            };
-
-            await frisby
-                .put(`http://localhost:3000/carts/${cartId}`, updateCart)
-                .expect('status', 204);
-
-            const response = await frisby
-                .get(`http://localhost:3000/carts/${cartId}`)
-                .expect('status', 200);
-
-            expect(response.json).toEqual(updateCart);
-        });
-    });
-
-    describe('DELETE /carts/{cartId}', () => {
-        test('should be able to remove a cart by cartId', async () => {
-            const anotherCart = {
-                cartId: uuid.v4(),
-                customerId: uuid.v4()
-            };
-
-            await frisby.post('http://localhost:3000/carts', anotherCart);
-
-            await frisby.del(`http://localhost:3000/carts/${anotherCart.cartId}`)
-                .expect('status', 204);
-
-            await frisby.get(`http://localhost:3000/carts/${anotherCart.cartId}`)
-                .expect('status', 404);
-        });
-    });
-
-    describe('POST /carts', () => {
-        test('should be able to add a cart', async () => {
-            const anotherCart = {
-                cartId: uuid.v4(),
-                customerId: uuid.v4()
-            };
-
-            await frisby.post('http://localhost:3000/carts', anotherCart)
-                .expect('status', 201)
-                .expect('json', anotherCart);
-
-            await frisby.del(`http://localhost:3000/carts/${anotherCart.customerId}`);
-        });
-    });
-
-    describe('GET /customers/{customerId}/carts', () => {
-        test('should be able to get a customers carts', async () => {
-            const originalCustomerId = 'd83ff143-9f8b-445a-8d8f-b9b8fe0f9f28';
-
-            await frisby.get(`http://localhost:3000/customers/${originalCustomerId}/carts`)
-                .expect('status', 200);
-        });
-    });
-}); 
+});
